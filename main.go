@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -35,6 +36,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		sort.Strings(names)
 		flacs := make([]string, 0, 8)
 		for _, name := range names {
 			if name == "." || name == ".." {
