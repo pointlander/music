@@ -59,29 +59,33 @@ func main() {
 			if info.IsDir() {
 				dir := filepath.Join(output, strings.ToLower(name))
 				fmt.Printf("mkdir %s\n", dir)
-				err := os.Mkdir(dir, info.Mode())
-				if err != nil {
-					file.Close()
-					panic(err)
+				if _, err := os.Stat(dir); os.IsNotExist(err) {
+					err := os.Mkdir(dir, info.Mode())
+					if err != nil {
+						file.Close()
+						panic(err)
+					}
 				}
 				walk(path, dir)
 			} else if strings.HasSuffix(name, ".flac") {
 				flacs = append(flacs, name)
 			} else {
-				new := filepath.Join(output, name)
-				fmt.Printf("cp %s %s\n", path, new)
-				cp, err := os.Create(new)
-				if err != nil {
-					file.Close()
-					panic(err)
-				}
-				_, err = io.Copy(cp, file)
-				if err != nil {
-					file.Close()
+				neu := filepath.Join(output, name)
+				fmt.Printf("cp %s %s\n", path, neu)
+				if _, err := os.Stat(neu); os.IsNotExist(err) {
+					cp, err := os.Create(neu)
+					if err != nil {
+						file.Close()
+						panic(err)
+					}
+					_, err = io.Copy(cp, file)
+					if err != nil {
+						file.Close()
+						cp.Close()
+						panic(err)
+					}
 					cp.Close()
-					panic(err)
 				}
-				cp.Close()
 			}
 			file.Close()
 		}
@@ -182,24 +186,28 @@ func main() {
 			}
 
 			if *Convert != "" {
-				new := filepath.Join(output, strings.TrimSuffix(name, ".flac")+"."+*Convert)
-				fmt.Println("ffmpeg", "-i", path /*"-ab", "320k",*/, "-map_metadata", "0", "-id3v2_version", "3", new)
-				command := exec.Command("ffmpeg", "-i", path /*"-ab", "320k",*/, "-map_metadata", "0", "-id3v2_version", "3", new)
-				err := command.Run()
-				if err != nil {
-					panic(err)
+				neu := filepath.Join(output, strings.TrimSuffix(name, ".flac")+"."+*Convert)
+				fmt.Println("ffmpeg", "-i", path /*"-ab", "320k",*/, "-map_metadata", "0", "-id3v2_version", "3", neu)
+				if _, err := os.Stat(neu); os.IsNotExist(err) {
+					command := exec.Command("ffmpeg", "-i", path /*"-ab", "320k",*/, "-map_metadata", "0", "-id3v2_version", "3", neu)
+					err := command.Run()
+					if err != nil {
+						panic(err)
+					}
 				}
 			} else {
-				new := filepath.Join(output, name)
-				fmt.Printf("cp %s %s\n", path, new)
-				cp, err := os.Create(new)
-				if err != nil {
-					panic(err)
-				}
-				defer cp.Close()
-				_, err = io.Copy(cp, file)
-				if err != nil {
-					panic(err)
+				neu := filepath.Join(output, name)
+				fmt.Printf("cp %s %s\n", path, neu)
+				if _, err := os.Stat(neu); os.IsNotExist(err) {
+					cp, err := os.Create(neu)
+					if err != nil {
+						panic(err)
+					}
+					defer cp.Close()
+					_, err = io.Copy(cp, file)
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 
